@@ -6,7 +6,7 @@
 
 ## Tải và cài đặt
 
-Tải bộ cài Windows x64 tại [GitHub Releases](https://github.com/VanDung279206/Teleportation-Cam/releases/latest). Không cần cài Python. Repo riêng tư: bạn cần đăng nhập tài khoản được cấp quyền để tải.
+Tải bộ cài Windows x64 tại [GitHub Releases](https://github.com/quyen2867/Teleportation-Cam/releases/latest). Không cần cài Python.
 
 1. Cài ứng dụng, mở icon **AnimeCam FX**.
 2. Bấm **Bật camera**, rời khung hình và giữ camera cố định để tự chụp nền.
