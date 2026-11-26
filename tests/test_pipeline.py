@@ -123,25 +123,25 @@ def test_hide_now_sends_only_background_and_never_adds_raw_debug_inset(monkeypat
     assert set(closed) == {"virtual", "camera", "tracker", "segmenter"}
 
 
-def test_return_sound_is_emitted_once_only_on_accepted_return():
+def test_effect_sound_is_emitted_once_per_accepted_transition():
     from animecam.effects import InstantTransmission
 
     worker = module.Pipeline(Settings())
     emitted = []
-    worker.return_sound.connect(lambda: emitted.append("return"))
+    worker.effect_sound.connect(lambda: emitted.append("cue"))
     effect = InstantTransmission()
     settings = Settings()
     assert not worker._trigger_effect(effect, 0, False, settings)
     assert worker._trigger_effect(effect, 1, True, settings)  # quick disappearance
-    assert not emitted and effect.state.value == "HIDDEN"
+    assert emitted == ["cue"] and effect.state.value == "HIDDEN"
     assert worker._trigger_effect(effect, 2, True, settings)  # animated return
-    assert emitted == ["return"] and effect.state.value == "APPEARING"
+    assert emitted == ["cue", "cue"] and effect.state.value == "APPEARING"
     assert not worker._trigger_effect(effect, 2.1, True, settings)
-    assert emitted == ["return"]
+    assert emitted == ["cue", "cue"]
     effect.advance(3, 0.5, settings.appear_seconds)
     assert worker._trigger_effect(effect, 4, True, settings)
     assert worker._trigger_effect(effect, 5, True, Settings(sound_enabled=False))
-    assert emitted == ["return"]
+    assert emitted == ["cue", "cue", "cue"]
 
 
 def test_auto_background_wait_forces_fresh_segmentation_even_in_economy_mode(monkeypatch):

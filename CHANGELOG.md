@@ -5,6 +5,7 @@
 - Hỗ trợ macOS 12+: đọc camera qua AVFoundation và xuất hình sang OBS bằng Syphon.
 - Khởi động cùng macOS bằng LaunchAgent; nhãn giao diện đổi theo hệ điều hành.
 - Thêm `scripts/setup.sh` và `scripts/run.sh` cho macOS.
+- Âm thanh hiệu ứng phát cho cả lúc biến mất và xuất hiện, không chỉ lúc hiện lại.
 
 ## 0.4.0
 

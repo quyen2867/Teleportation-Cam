@@ -1,6 +1,6 @@
 # Teleportation Cam
 
-Ứng dụng webcam cho Windows và macOS: đưa hai ngón tay lên trán để biến mất, làm lại để xuất hiện cùng vệt sáng và âm thanh ngắn. Video được xử lý ngay trên máy bằng MediaPipe và OpenCV.
+Ứng dụng webcam cho Windows và macOS: đưa hai ngón tay lên trán để biến mất, làm lại để xuất hiện. Cả hai chiều đều có vệt sáng và âm thanh ngắn. Video được xử lý ngay trên máy bằng MediaPipe và OpenCV.
 
 Ứng dụng hiện hiển thị tên **AnimeCam FX** trong hệ điều hành. Repo và trang phát hành dùng tên **Teleportation Cam**.
 

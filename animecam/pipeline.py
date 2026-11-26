@@ -45,7 +45,7 @@ class Pipeline(QThread):
     error = Signal(str)
     notice = Signal(str)
     virtual_status = Signal(bool, str)
-    return_sound = Signal()
+    effect_sound = Signal()
 
     def __init__(self, settings: Settings, parent=None, effect_factory: Callable[[], Effect] = InstantTransmission):
         super().__init__(parent)
@@ -75,10 +75,10 @@ class Pipeline(QThread):
         return packet
 
     def _trigger_effect(self, effect, now, ready, settings):
-        returning = effect.state.value == "HIDDEN"
         accepted = effect.trigger(now, ready, quick_exit=settings.quick_disappear)
-        if accepted and returning and settings.sound_enabled:
-            self.return_sound.emit()
+        if accepted and settings.sound_enabled:
+            # The cue marks both directions, so disappearing is audible too.
+            self.effect_sound.emit()
         return accepted
 
     def run(self):

@@ -605,7 +605,7 @@ class MainWindow(QMainWindow):
         self.worker.error.connect(self._error)
         self.worker.notice.connect(self.status.setText)
         self.worker.virtual_status.connect(self._virtual_status)
-        self.worker.return_sound.connect(self._play_sound)
+        self.worker.effect_sound.connect(self._play_sound)
         self.worker.finished.connect(self._finished)
         self._set_running(True)
         self.status.setText("Đang bật camera…")
