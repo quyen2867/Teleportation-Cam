@@ -75,7 +75,7 @@ def test_idle_launch_and_removed_meeting_destinations():
 
 def test_repeat_shortcut_click_is_forwarded_over_real_local_ipc():
     app = QApplication.instance() or QApplication([])
-    name = "AnimeCamFX-test-" + uuid.uuid4().hex
+    name = "AnimeCamFX-test-" + uuid.uuid4().hex[:8]
     server = desktop.InstanceBroker(name)
     received = []
     server.received.connect(received.append)
@@ -102,3 +102,35 @@ def test_repeat_shortcut_click_is_forwarded_over_real_local_ipc():
         if sender.poll() is None:
             sender.terminate()
         server.close()
+
+
+def test_macos_startup_writes_only_a_launch_agent(tmp_path, monkeypatch):
+    import plistlib
+
+    path = tmp_path / "com.animecamfx.tray.plist"
+    applied = []
+    monkeypatch.setattr(desktop, "launch_agent_path", lambda: path)
+    monkeypatch.setattr(desktop, "_launchctl", applied.append)
+
+    desktop._set_macos_startup(True)
+    payload = plistlib.loads(path.read_bytes())
+    assert payload["Label"] == desktop.LAUNCH_AGENT_ID
+    assert payload["RunAtLoad"] is True
+    assert payload["ProgramArguments"][-1] == "--tray"
+    assert "--start-camera" not in payload["ProgramArguments"]
+    assert "--start-virtual-camera" not in payload["ProgramArguments"]
+    assert applied == [True]
+
+    desktop._set_macos_startup(False)
+    assert not path.exists()
+    assert applied == [True, False]
+
+
+def test_macos_startup_state_follows_the_launch_agent(tmp_path, monkeypatch):
+    if desktop.sys.platform != "darwin":
+        pytest.skip("macOS launch agent")
+    path = tmp_path / "com.animecamfx.tray.plist"
+    monkeypatch.setattr(desktop, "launch_agent_path", lambda: path)
+    assert not desktop.startup_enabled()
+    path.write_text("{}", encoding="utf-8")
+    assert desktop.startup_enabled()

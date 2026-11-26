@@ -1,5 +1,7 @@
 from dataclasses import asdict, replace
+import os
 from pathlib import Path
+import sys
 
 from PySide6.QtCore import Qt, QSettings, QTimer, Signal, QLocale, QSignalBlocker
 from PySide6.QtGui import QColor, QImage, QPainter, QShortcut, QKeySequence, QIcon, QAction, QFont
@@ -17,10 +19,19 @@ from animecam.sound import SoundPlayer
 from animecam.desktop import startup_enabled, set_startup, validated_request
 
 
-FONT_FAMILY = "Calibri"
+IS_WINDOWS = os.name == "nt"
+IS_MACOS = sys.platform == "darwin"
+SYSTEM_NAME = "macOS" if IS_MACOS else ("Windows" if IS_WINDOWS else "hệ thống")
+FONT_FAMILY = "Calibri" if IS_WINDOWS else "Helvetica Neue"
+
+
+def app_icon():
+    # The .ico carries every Windows size; macOS renders the PNG cleanly in the
+    # menu bar and Dock.
+    return QIcon(str(resource_root() / "assets" / ("animecam.png" if IS_MACOS else "animecam.ico")))
 
 STYLE = """
-QWidget { font-family: 'Calibri'; font-size: 15px; color: #242424; }
+QWidget { font-family: '__FONT__'; font-size: 15px; color: #242424; }
 QMainWindow, QDialog { background: #f3f3f3; }
 QLabel { background: transparent; }
 QLabel#brand { font-size: 18px; font-weight: 600; }
@@ -165,7 +176,8 @@ class MainWindow(QMainWindow):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self._poll)
         self.timer.start(16)
-        for key, command in (("F8", "restore"), ("F9", "trigger"), ("F10", "hide"), ("Ctrl+B", "capture")):
+        capture_key = "Meta+B" if IS_MACOS else "Ctrl+B"
+        for key, command in (("F8", "restore"), ("F9", "trigger"), ("F10", "hide"), (capture_key, "capture")):
             shortcut = QShortcut(QKeySequence(key), self)
             shortcut.activated.connect(lambda c=command: self._command(c))
 
@@ -176,6 +188,10 @@ class MainWindow(QMainWindow):
             try:
                 for name, default in asdict(settings).items():
                     values[name] = self.preferences.value(name, default, type=type(default))
+                if not IS_WINDOWS:
+                    # A settings file copied from Windows may still name the
+                    # Frame Server mode, which only exists there.
+                    values["camera_mode"] = "compatibility"
                 settings = Settings(**values)
             except (TypeError, ValueError):
                 pass
@@ -199,7 +215,12 @@ class MainWindow(QMainWindow):
         self.camera_button = button("Bật camera", self._toggle_camera, "primary")
         header.addWidget(self.camera_button)
         self.virtual_button = button("Bật camera ảo", self._toggle_virtual)
-        self.virtual_button.setToolTip("Cần OBS Studio. Chọn OBS Virtual Camera trong ứng dụng gọi video.\nKhông bật camera ảo trong OBS cùng lúc.")
+        if IS_MACOS:
+            self.virtual_button.setToolTip(
+                "Cần OBS Studio. Trong OBS thêm nguồn Syphon Client và chọn “AnimeCam FX”,\n"
+                "rồi bật OBS Virtual Camera để ứng dụng gọi video nhận hình.")
+        else:
+            self.virtual_button.setToolTip("Cần OBS Studio. Chọn OBS Virtual Camera trong ứng dụng gọi video.\nKhông bật camera ảo trong OBS cùng lúc.")
         header.addWidget(self.virtual_button)
         header.addStretch()
         header.addWidget(button("Trợ giúp", self._help, "quiet"))
@@ -283,10 +304,16 @@ class MainWindow(QMainWindow):
         self.camera_combo.currentIndexChanged.connect(lambda i: self._change(camera_index=i))
         form.addRow("Thiết bị", self.camera_combo)
         self.camera_mode = QComboBox()
-        self.camera_mode.addItem("Dùng chung (Windows)", "shared")
-        self.camera_mode.addItem("Tương thích", "compatibility")
+        if IS_WINDOWS:
+            self.camera_mode.addItem("Dùng chung (Windows)", "shared")
+        self.camera_mode.addItem("Tự động (AVFoundation)" if IS_MACOS else "Tương thích", "compatibility")
         self.camera_mode.setCurrentIndex(max(0, self.camera_mode.findData(self.settings.camera_mode)))
-        self.camera_mode.setToolTip("Dùng chung: giữ camera cho các ứng dụng khác, theo định dạng Windows đang dùng.\nTương thích: có thể chiếm riêng webcam; bấm Tắt camera khi dùng ở ứng dụng khác.")
+        if IS_WINDOWS:
+            self.camera_mode.setToolTip("Dùng chung: giữ camera cho các ứng dụng khác, theo định dạng Windows đang dùng.\nTương thích: có thể chiếm riêng webcam; bấm Tắt camera khi dùng ở ứng dụng khác.")
+        elif IS_MACOS:
+            self.camera_mode.setToolTip("macOS cho nhiều ứng dụng đọc cùng webcam; không cần chế độ dùng chung.")
+        else:
+            self.camera_mode.setToolTip("Có thể chiếm riêng webcam; bấm Tắt camera khi dùng ở ứng dụng khác.")
         self.camera_mode.currentIndexChanged.connect(lambda i: self._camera_mode_changed())
         form.addRow("Chế độ", self.camera_mode)
         self.resolution = QComboBox()
@@ -387,7 +414,7 @@ class MainWindow(QMainWindow):
         self.volume.valueChanged.connect(lambda v: self._change(sound_volume=v / 100))
         audio_form.addRow("Âm lượng", self.volume)
         self.audio_output = QComboBox()
-        self.audio_output.addItem("Mặc định của Windows", -1)
+        self.audio_output.addItem("Mặc định của Windows" if IS_WINDOWS else "Thiết bị mặc định", -1)
         self.audio_output.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
         self.audio_output.setMinimumContentsLength(14)
         try:
@@ -409,7 +436,7 @@ class MainWindow(QMainWindow):
         self.virtual_label = label("Camera ảo đang tắt", "muted", True)
         vl.addWidget(self.virtual_label)
         desktop_card, dl = card("Cài đặt")
-        self.startup = QCheckBox("Khởi động cùng Windows")
+        self.startup = QCheckBox(f"Khởi động cùng {SYSTEM_NAME}")
         self.startup.setToolTip("Chạy ở khay hệ thống, không tự bật camera")
         self.startup.setChecked(startup_enabled())
         self.startup.toggled.connect(self._startup_changed)
@@ -476,7 +503,7 @@ class MainWindow(QMainWindow):
     def _setup_tray(self):
         if not self._desktop_mode or not QSystemTrayIcon.isSystemTrayAvailable():
             return
-        self.tray = QSystemTrayIcon(QIcon(str(resource_root() / "assets" / "animecam.ico")), self)
+        self.tray = QSystemTrayIcon(app_icon(), self)
         menu = QMenu(self)
         for title, callback in (
             ("Mở AnimeCam FX", self.show_window),
@@ -505,7 +532,7 @@ class MainWindow(QMainWindow):
         except OSError as exc:
             with QSignalBlocker(self.startup):
                 self.startup.setChecked(not enabled)
-            self._error(f"Không đổi được tùy chọn khởi động cùng Windows: {exc}")
+            self._error(f"Không đổi được tùy chọn khởi động cùng {SYSTEM_NAME}: {exc}")
 
     def _stop_camera(self):
         if self.worker is not None:
@@ -544,9 +571,12 @@ class MainWindow(QMainWindow):
     def _camera_mode_changed(self):
         self._change(camera_mode=self.camera_mode.currentData())
         can_configure = self.worker is None and self.settings.camera_mode == "compatibility"
+        tip = ""
+        if not can_configure and IS_WINDOWS:
+            tip = "Chế độ dùng chung giữ độ phân giải và FPS do Windows chọn."
         for widget in (self.resolution, self.fps_spin):
             widget.setEnabled(can_configure)
-            widget.setToolTip("Chế độ dùng chung giữ độ phân giải và FPS do Windows chọn." if not can_configure else "")
+            widget.setToolTip(tip)
 
     def _set_running(self, running):
         self.camera_combo.setEnabled(not running)
@@ -655,13 +685,19 @@ class MainWindow(QMainWindow):
             self.virtual_label.setText("Camera ảo đang bật")
 
     def _help(self):
+        if IS_MACOS:
+            call_help = ("Cuộc gọi: cài OBS Studio, bật camera ảo tại đây. Trong OBS thêm nguồn "
+                         "Syphon Client, chọn “AnimeCam FX”, rồi bật OBS Virtual Camera.\n\n"
+                         "Camera ảo chỉ truyền hình. Muốn chia sẻ tiếng hiệu ứng, bật chia sẻ âm thanh máy.")
+        else:
+            call_help = ("Cuộc gọi: cài OBS Studio, bật camera ảo tại đây rồi chọn OBS Virtual Camera trong cuộc gọi.\n\n"
+                         "Camera ảo chỉ truyền hình. Muốn chia sẻ tiếng hiệu ứng, bật chia sẻ âm thanh máy.")
         dialog = QMessageBox(self)
         dialog.setWindowTitle("Trợ giúp — AnimeCam FX")
         dialog.setText("1. Bật camera, rời khung hình để tự chụp nền.\n\n"
             "2. Đưa hai ngón tay lên trán, giữ 0,5 giây để dịch chuyển. Hạ tay trước khi làm lại.\n\n"
             "F9: dịch chuyển · F10: ẩn ngay · F8: hiện ngay.\n\n"
-            "Cuộc gọi: cài OBS Studio, bật camera ảo tại đây rồi chọn OBS Virtual Camera trong cuộc gọi.\n\n"
-            "Camera ảo chỉ truyền hình. Muốn chia sẻ tiếng hiệu ứng, bật chia sẻ âm thanh máy.")
+            + call_help)
         dialog.setStandardButtons(QMessageBox.StandardButton.Ok)
         dialog.button(QMessageBox.StandardButton.Ok).setText("Đã hiểu")
         dialog.exec()
@@ -703,4 +739,5 @@ def apply_theme(app: QApplication):
                          "QMenu", "QMenuBar", "QMessageBox", "QFileDialog", "QTipLabel"):
         app.setFont(font, widget_class)
     QToolTip.setFont(font)
-    app.setStyleSheet(STYLE.replace("__ASSETS__", (resource_root() / "assets").as_posix()))
+    app.setStyleSheet(STYLE.replace("__ASSETS__", (resource_root() / "assets").as_posix())
+                            .replace("__FONT__", FONT_FAMILY))

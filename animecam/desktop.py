@@ -1,8 +1,10 @@
-"""Windows desktop integration. Importing this module never changes Windows."""
+"""Desktop integration for Windows and macOS. Importing never changes the system."""
 import getpass
 import hashlib
 import json
+import os
 from pathlib import Path
+import plistlib
 import subprocess
 import sys
 
@@ -13,18 +15,58 @@ from animecam.config import resource_root
 
 STARTUP_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 STARTUP_NAME = "AnimeCamFX"
+LAUNCH_AGENT_ID = "com.animecamfx.tray"
 
 
-def launch_command(arguments=()):
+def launch_argv(arguments=()):
     command = [sys.executable]
     if not getattr(sys, "frozen", False):
         command.append(str(resource_root() / "main.py"))
-    return subprocess.list2cmdline([*command, *arguments])
+    return [*command, *arguments]
+
+
+def launch_command(arguments=()):
+    return subprocess.list2cmdline(launch_argv(arguments))
+
+
+def launch_agent_path():
+    return Path.home() / "Library" / "LaunchAgents" / f"{LAUNCH_AGENT_ID}.plist"
+
+
+def _write_launch_agent(path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "Label": LAUNCH_AGENT_ID,
+        "ProgramArguments": launch_argv(["--tray"]),
+        "RunAtLoad": True,
+        "LimitLoadToSessionType": "Aqua",
+    }
+    path.write_bytes(plistlib.dumps(payload))
+
+
+def _launchctl(enabled):
+    """Apply the change to this login session; the next login reads the plist."""
+    domain = f"gui/{os.getuid()}"
+    command = (["launchctl", "bootstrap", domain, str(launch_agent_path())] if enabled
+               else ["launchctl", "bootout", f"{domain}/{LAUNCH_AGENT_ID}"])
+    try:
+        subprocess.run(command, check=False, capture_output=True, timeout=5)
+    except (OSError, subprocess.SubprocessError):
+        pass
+
+
+def _set_macos_startup(enabled):
+    path = launch_agent_path()
+    if enabled:
+        _write_launch_agent(path)
+    else:
+        path.unlink(missing_ok=True)
+    _launchctl(enabled)
 
 
 def startup_enabled(registry=None):
-    if sys.platform != "win32" and registry is None:
-        return False
+    if registry is None and os.name != "nt":
+        return launch_agent_path().is_file() if sys.platform == "darwin" else False
     if registry is None:
         import winreg as registry
     try:
@@ -36,8 +78,11 @@ def startup_enabled(registry=None):
 
 
 def set_startup(enabled, registry=None):
-    if sys.platform != "win32" and registry is None:
-        raise RuntimeError("Khởi động cùng Windows chỉ dùng được trên Windows")
+    if registry is None and os.name != "nt":
+        if sys.platform == "darwin":
+            _set_macos_startup(bool(enabled))
+            return
+        raise RuntimeError("Khởi động cùng hệ thống chỉ dùng được trên Windows và macOS")
     if registry is None:
         import winreg as registry
     # This Run value opens an idle tray app. It never starts the webcam at login.
@@ -90,7 +135,10 @@ class InstanceBroker(QObject):
 
     def listen(self):
         if not self.server.listen(self.name):
-            raise RuntimeError("Không tạo được phiên ứng dụng. Hãy mở AnimeCam FX đang chạy ở khay hệ thống.")
+            # macOS limits Unix socket paths to roughly 104 bytes, so a very
+            # long user name or temp path is reported instead of failing mute.
+            raise RuntimeError("Không tạo được phiên ứng dụng. Hãy mở AnimeCam FX đang chạy ở khay hệ thống. "
+                               f"Chi tiết: {self.server.errorString()}")
 
     def _accept(self):
         while self.server.hasPendingConnections():

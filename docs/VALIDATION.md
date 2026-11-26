@@ -47,3 +47,20 @@ Khả năng chia sẻ camera phụ thuộc Windows và driver. Thành phần dù
 ```
 
 Không chạy các probe camera đồng thời với nhau.
+
+## macOS 0.5.0
+
+Môi trường: macOS 26.7.1 arm64, CPython 3.12, MediaPipe 0.10.32, OpenCV 4.11.0, PySide6 6.8.3, syphon-python 0.2.0.
+
+- 74 bài kiểm thử đạt, 2 bài bỏ qua (camera dùng chung chỉ có trên Windows); Ruff đạt.
+- Giao diện mở và chụp ảnh thành công bằng `--ui-smoke`; chế độ camera hiển thị **Tự động (AVFoundation)**.
+- Syphon: server **AnimeCam FX** được `SyphonServerDirectory` phát hiện; ảnh 16×8 gửi qua `SyphonCamera` được `SyphonMetalClient` nhận khớp từng pixel, đúng hướng và thứ tự kênh.
+- Chưa nghiệm thu: webcam thật và cử chỉ trên macOS, OBS Virtual Camera trong cuộc gọi thật, chạy dài 20 phút.
+
+Chạy lại trên macOS:
+
+```bash
+.venv/bin/python -m pytest -q
+.venv/bin/ruff check animecam tests tools scripts main.py launcher.py
+.venv/bin/python main.py --ui-smoke --screenshot artifacts/mac-ui.png
+```

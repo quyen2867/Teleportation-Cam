@@ -1,10 +1,13 @@
-# Tested target: CPython 3.12 x64, Windows 11. One OpenCV distribution only.
+# Tested targets: CPython 3.12 on Windows 11 x64 and macOS 12+ (Apple Silicon and Intel).
 numpy==1.26.4
 opencv-contrib-python==4.11.0.86
 mediapipe==0.10.32
 # Official PySide6 distribution containing QtCore/QtGui/QtWidgets.
 PySide6-Essentials==6.8.3
-pyvirtualcam==0.14.0
+# Windows and Linux publish through OBS's virtual camera driver.
+pyvirtualcam==0.14.0; sys_platform != "darwin"
+# macOS publishes through a Syphon Metal server that OBS reads as a source.
+syphon-python==0.2.0; sys_platform == "darwin"
 # Also used explicitly for the short procedural return sound.
 sounddevice==0.5.6
 soundfile==0.13.1

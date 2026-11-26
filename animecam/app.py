@@ -19,15 +19,13 @@ def main(arguments=None, *, ui_smoke=False, screenshot=None):
     screenshot = screenshot or args.screenshot
     from PySide6.QtCore import QStandardPaths, QTimer
     from PySide6.QtWidgets import QApplication
-    from PySide6.QtGui import QIcon
-    from animecam.ui import MainWindow, apply_theme
-    from animecam.config import resource_root
+    from animecam.ui import MainWindow, apply_theme, app_icon
     from animecam.desktop import InstanceBroker
 
     app = QApplication([sys.argv[0]])
     app.setApplicationName("AnimeCamFX")
     app.setOrganizationName("AnimeCamFX")
-    app.setWindowIcon(QIcon(str(resource_root() / "assets" / "animecam.ico")))
+    app.setWindowIcon(app_icon())
     if sys.platform == "win32":
         import ctypes
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("AnimeCamFX.Desktop")
