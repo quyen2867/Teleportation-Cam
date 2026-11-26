@@ -1,0 +1,12 @@
+# Tested target: CPython 3.12 x64, Windows 11. One OpenCV distribution only.
+numpy==1.26.4
+opencv-contrib-python==4.11.0.86
+mediapipe==0.10.32
+# Official PySide6 distribution containing QtCore/QtGui/QtWidgets.
+PySide6-Essentials==6.8.3
+pyvirtualcam==0.14.0
+# Also used explicitly for the short procedural return sound.
+sounddevice==0.5.6
+soundfile==0.13.1
+# Constrain MediaPipe's plotting dependency for NumPy 1.x.
+matplotlib==3.10.1
