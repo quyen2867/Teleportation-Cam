@@ -1,5 +1,11 @@
 # Các phiên bản
 
+## 0.5.0
+
+- Hỗ trợ macOS 12+: đọc camera qua AVFoundation và xuất hình sang OBS bằng Syphon.
+- Khởi động cùng macOS bằng LaunchAgent; nhãn giao diện đổi theo hệ điều hành.
+- Thêm `scripts/setup.sh` và `scripts/run.sh` cho macOS.
+
 ## 0.4.0
 
 - Tự chụp nền chịu được dao động sáng nhẹ và nhiễu, vẫn chặn người và chuyển động.

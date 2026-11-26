@@ -1,10 +1,12 @@
 # Teleportation Cam
 
-Ứng dụng webcam cho Windows: đưa hai ngón tay lên trán để biến mất, làm lại để xuất hiện cùng vệt sáng và âm thanh ngắn. Video được xử lý ngay trên máy bằng MediaPipe và OpenCV.
+Ứng dụng webcam cho Windows và macOS: đưa hai ngón tay lên trán để biến mất, làm lại để xuất hiện cùng vệt sáng và âm thanh ngắn. Video được xử lý ngay trên máy bằng MediaPipe và OpenCV.
 
-Ứng dụng hiện hiển thị tên **AnimeCam FX** trong Windows. Repo và trang phát hành dùng tên **Teleportation Cam**.
+Ứng dụng hiện hiển thị tên **AnimeCam FX** trong hệ điều hành. Repo và trang phát hành dùng tên **Teleportation Cam**.
 
 ## Tải và cài đặt
+
+### Windows
 
 Tải bộ cài Windows x64 tại [GitHub Releases](https://github.com/quyen2867/Teleportation-Cam/releases/latest). Không cần cài Python.
 
@@ -13,12 +15,35 @@ Tải bộ cài Windows x64 tại [GitHub Releases](https://github.com/quyen2867
 3. Quay lại, đưa hai ngón tay lên trán và giữ khoảng 0,5 giây. Hạ tay trước khi làm lại.
 4. Để dùng hiệu ứng trong cuộc gọi, cài [OBS Studio](https://obsproject.com/), bật **camera ảo** trong AnimeCam rồi chọn **OBS Virtual Camera** trong ứng dụng gọi video.
 
+### macOS
+
+Chưa có bộ cài sẵn; chạy từ mã nguồn trên macOS 12+ với Python 3.12:
+
+```bash
+brew install python@3.12
+./scripts/setup.sh
+./scripts/run.sh
+```
+
+Lần đầu bật camera, macOS sẽ hỏi quyền **Camera**; chọn **Cho phép** (hoặc mở Cài đặt hệ thống → Quyền riêng tư & Bảo mật → Camera). Khi chạy bằng `./scripts/run.sh` từ Terminal, macOS cấp quyền cho ứng dụng Terminal đang dùng.
+
+Để dùng trong cuộc gọi, cài [OBS Studio](https://obsproject.com/) rồi:
+
+1. Bấm **Bật camera ảo** trong AnimeCam FX. Ứng dụng tạo server Syphon tên **AnimeCam FX**.
+2. Trong OBS, thêm nguồn **Syphon Client** và chọn server **AnimeCam FX**.
+3. Bật **Start Virtual Camera** trong OBS.
+4. Trong Zoom/Meet/Teams chọn **OBS Virtual Camera**.
+
+macOS không có driver camera ảo tích hợp; OBS phải đang chạy để ứng dụng gọi video nhận hình. Cách khác không cần OBS: mở **Hình xuất** trong AnimeCam FX rồi chia sẻ cửa sổ đó.
+
 | Phím | Thao tác |
 | --- | --- |
 | F9 | Biến mất / xuất hiện có hiệu ứng |
 | F10 | Ẩn ngay bằng ảnh nền đã chụp |
 | F8 | Hiện ngay, bỏ qua hiệu ứng và âm thanh |
-| Ctrl+B | Chụp nền thủ công sau 3 giây |
+| Ctrl+B (macOS: ⌘B) | Chụp nền thủ công sau 3 giây |
+
+Trên bàn phím Mac, F8/F9/F10 có thể cần giữ thêm phím **Fn** tùy cấu hình.
 
 Khi ẩn hoàn toàn, cả khung hình là ảnh nền đã lưu nên cảnh phòng đứng yên. Âm thanh hiệu ứng phát trên máy; camera ảo chỉ truyền hình. Muốn người trong cuộc gọi nghe tiếng hiệu ứng, cần chia sẻ âm thanh máy hoặc dùng thiết bị âm thanh ảo.
 
@@ -28,9 +53,13 @@ Mặc định **Camera → Chế độ → Dùng chung (Windows)**: ứng dụng
 
 Chế độ dùng chung giữ độ phân giải và tốc độ hình Windows đang dùng. Nếu camera không hỗ trợ, chọn **Tương thích**; chế độ này có thể chiếm riêng webcam. Bấm **Tắt camera** để nhả webcam. Ứng dụng không tự chuyển sang chế độ chiếm riêng khi dùng chung thất bại.
 
+Trên macOS, ứng dụng đọc camera qua AVFoundation. Hệ điều hành cho nhiều ứng dụng đọc cùng webcam nên chỉ có một chế độ **Tự động (AVFoundation)**, không cần Windows Frame Server.
+
 Tự chụp nền chờ cảnh không có người ổn định khoảng 2 giây, chịu được dao động sáng nhẹ và nhiễu cảm biến. Sau khi đã chụp, nền không tự bị ghi đè. Bấm **Chờ chụp nền mới** khi muốn chụp lại. Camera chuyển động, hình quá tối/sáng hoặc thay đổi ánh sáng lớn vẫn cần đợi ổn định.
 
 ## Chạy từ mã nguồn
+
+### Windows
 
 Cần Windows 10/11 x64, Python 3.12 và Visual Studio C++ x64 Build Tools kèm Windows SDK. Công cụ C++ chỉ cần trên máy phát triển để build thành phần camera dùng chung.
 
@@ -46,6 +75,18 @@ Nếu không dùng Python Launcher, truyền đường dẫn Python vào bước
 .\scripts\setup.ps1 -Python 'C:\duong-dan\python.exe'
 ```
 
+### macOS
+
+Cần macOS 12+, Python 3.12 và Xcode Command Line Tools (chỉ để build thư viện phụ thuộc nếu cần):
+
+```bash
+brew install python@3.12
+./scripts/setup.sh
+./scripts/run.sh
+```
+
+`setup.sh` tạo `.venv`, cài phụ thuộc theo `requirements.txt` và tải mô hình. Trên macOS, `syphon-python` thay cho `pyvirtualcam`; cả hai đều là wheel sẵn, không cần Xcode để cài.
+
 Bước thiết lập tải mô hình từ Google MediaPipe, kiểm tra SHA-256 trong `models/checksums.json`. Khi chạy webcam, ứng dụng không tải thêm mô hình và không gửi hình lên mạng.
 
 ## Kiểm thử và đóng gói
@@ -56,7 +97,15 @@ Bước thiết lập tải mô hình từ Google MediaPipe, kiểm tra SHA-256 
 .\scripts\build-installer.ps1
 ```
 
-Bộ cài được tạo trong `dist/`. Payload chỉ gồm EXE và thư viện, mô hình, tài nguyên cần thiết; không kèm môi trường phát triển, script chạy hay tài liệu hướng dẫn. Bản phát hành trên GitHub dùng tên `TeleportationCam-Setup-0.4.0.exe`; đó là cùng bộ cài được script tạo dưới tên `AnimeCamFX-Setup-0.4.0.exe`.
+Trên macOS, cài thêm công cụ phát triển rồi chạy kiểm thử:
+
+```bash
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/python -m pytest -q
+.venv/bin/ruff check animecam tests tools scripts main.py launcher.py
+```
+
+Bộ cài được tạo trong `dist/`. Payload chỉ gồm EXE và thư viện, mô hình, tài nguyên cần thiết; không kèm môi trường phát triển, script chạy hay tài liệu hướng dẫn. Bản phát hành trên GitHub dùng tên `TeleportationCam-Setup-<phiên bản>.exe`; đó là cùng bộ cài được script tạo dưới tên `AnimeCamFX-Setup-<phiên bản>.exe`.
 
 Các probe sau mở thiết bị thật, chỉ ghi thông số và không lưu ảnh/video. Chạy từng lệnh riêng để tránh tranh webcam:
 
@@ -73,7 +122,7 @@ Kết quả và giới hạn kiểm tra: [docs/VALIDATION.md](docs/VALIDATION.md
 | Thư mục / tệp | Công dụng |
 | --- | --- |
 | `animecam/` | Pipeline webcam, nhận cử chỉ, nền, hiệu ứng, âm thanh và giao diện |
-| `native/shared_camera.cpp` | Camera dùng chung qua Windows Media Foundation |
+| `native/shared_camera.cpp` | Camera dùng chung qua Windows Media Foundation (chỉ Windows) |
 | `assets/` | Icon, biểu tượng điều khiển, âm thanh và thông tin nguồn |
 | `models/checksums.json` | Mã kiểm tra các mô hình tải về |
 | `tests/` | Kiểm thử thuật toán, pipeline, giao diện và vòng đời camera |

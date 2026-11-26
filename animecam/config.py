@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+import os
 from pathlib import Path
 import sys
 
@@ -7,10 +8,15 @@ def resource_root() -> Path:
     return Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[1]))
 
 
+def default_camera_mode() -> str:
+    """Shared Frame Server capture exists only on Windows."""
+    return "shared" if os.name == "nt" else "compatibility"
+
+
 @dataclass(frozen=True)
 class Settings:
     camera_index: int = 0
-    camera_mode: str = "shared"
+    camera_mode: str = field(default_factory=default_camera_mode)
     width: int = 1280
     height: int = 720
     fps: int = 30

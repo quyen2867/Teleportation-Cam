@@ -16,6 +16,7 @@ Dependencies retain their own licenses. Consult the actual LICENSE/COPYING files
 | NumPy | https://numpy.org/doc/stable/license.html |
 | PySide6/Qt | https://doc.qt.io/qtforpython-6/licenses.html (LGPL/GPL/commercial options) |
 | PyVirtualCam | https://github.com/letmaik/pyvirtualcam (GPL-2.0) |
+| syphon-python (macOS) | https://github.com/cansik/syphon-python (MIT); bundles Syphon.framework (BSD-style) |
 | python-sounddevice / PortAudio | https://python-sounddevice.readthedocs.io/ and https://www.portaudio.com/ |
 | SoundFile / libsndfile | https://python-soundfile.readthedocs.io/ and https://libsndfile.github.io/libsndfile/ |
 | OBS Studio, installed separately | https://github.com/obsproject/obs-studio |

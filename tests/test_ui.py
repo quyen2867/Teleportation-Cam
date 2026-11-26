@@ -113,7 +113,7 @@ def test_output_starts_once_and_receives_processed_frames():
     app.processEvents()
 
 
-def test_startup_checkbox_is_explicit_and_uses_the_windows_integration(monkeypatch):
+def test_startup_checkbox_is_explicit_and_uses_the_platform_integration(monkeypatch):
     import animecam.ui as module
 
     app = QApplication.instance() or QApplication([])
@@ -129,7 +129,7 @@ def test_startup_checkbox_is_explicit_and_uses_the_windows_integration(monkeypat
     app.processEvents()
 
 
-def test_shared_camera_mode_does_not_renegotiate_physical_size_and_idle_ui_opens_no_camera(monkeypatch):
+def test_camera_mode_controls_follow_the_platform(monkeypatch):
     import animecam.ui as module
 
     app = QApplication.instance() or QApplication([])
@@ -137,9 +137,14 @@ def test_shared_camera_mode_does_not_renegotiate_physical_size_and_idle_ui_opens
     monkeypatch.setattr(module, "Pipeline", lambda *args: opened.append(args))
     window = MainWindow(persist=False)
     assert not opened and window.worker is None
-    assert window.settings.camera_mode == "shared"
-    assert not window.resolution.isEnabled() and not window.fps_spin.isEnabled()
-    window.camera_mode.setCurrentIndex(window.camera_mode.findData("compatibility"))
+    if module.IS_WINDOWS:
+        assert window.settings.camera_mode == "shared"
+        assert not window.resolution.isEnabled() and not window.fps_spin.isEnabled()
+        window.camera_mode.setCurrentIndex(window.camera_mode.findData("compatibility"))
+    else:
+        # Shared Frame Server capture is Windows-only.
+        assert window.camera_mode.findData("shared") == -1
+        assert window.settings.camera_mode == "compatibility"
     assert window.settings.camera_mode == "compatibility"
     assert window.resolution.isEnabled() and window.fps_spin.isEnabled()
     assert not opened

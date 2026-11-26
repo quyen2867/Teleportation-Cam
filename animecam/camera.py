@@ -1,5 +1,6 @@
 """Webcam reader with a single replaceable frame, never an unbounded queue."""
 import os
+import sys
 import threading
 import time
 
@@ -33,17 +34,25 @@ class Camera:
                 raise RuntimeError("Camera dùng chung chưa truyền hình. Hãy thử chế độ Tương thích.")
             return
         # DirectShow avoids the slow MSMF mode negotiation common on Windows.
-        backends = [cv2.CAP_DSHOW, cv2.CAP_MSMF] if os.name == "nt" else [cv2.CAP_ANY]
-        for backend in backends:
+        # macOS has no shared-mode equivalent: AVFoundation already lets several
+        # applications read the same camera.
+        if os.name == "nt":
+            backends = [(cv2.CAP_DSHOW, "Tương thích (DirectShow)"),
+                        (cv2.CAP_MSMF, "Tương thích (Media Foundation)")]
+        elif sys.platform == "darwin":
+            backends = [(cv2.CAP_AVFOUNDATION, "Tương thích (AVFoundation)")]
+        else:
+            backends = [(cv2.CAP_ANY, "Tương thích")]
+        for backend, backend_label in backends:
             cap = cv2.VideoCapture(self.settings.camera_index, backend)
             if cap.isOpened():
                 self._capture = cap
+                self.backend = backend_label
                 break
             cap.release()
         if self._capture is None:
-            raise RuntimeError("Không mở được webcam. Hãy kiểm tra số camera, quyền truy cập camera trong Windows và ứng dụng khác đang dùng webcam.")
+            raise RuntimeError(self._open_error())
         cap = self._capture
-        self.backend = "Tương thích (DirectShow)" if backend == cv2.CAP_DSHOW else "Tương thích"
         cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.settings.width)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.settings.height)
@@ -51,6 +60,16 @@ class Camera:
         cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         self._thread = threading.Thread(target=self._read, name="webcam-reader", daemon=True)
         self._thread.start()
+
+    @staticmethod
+    def _open_error():
+        if os.name == "nt":
+            return ("Không mở được webcam. Hãy kiểm tra số camera, quyền truy cập camera trong Windows "
+                    "và ứng dụng khác đang dùng webcam.")
+        if sys.platform == "darwin":
+            return ("Không mở được webcam. Hãy kiểm tra số camera, quyền truy cập Camera trong "
+                    "Cài đặt hệ thống → Quyền riêng tư & Bảo mật và ứng dụng khác đang dùng webcam.")
+        return "Không mở được webcam. Hãy kiểm tra số camera và quyền truy cập camera."
 
     def _publish(self, frame):
         with self._condition:
